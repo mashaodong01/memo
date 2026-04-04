@@ -34,12 +34,32 @@
       </div>
     </div>
 
+    <!-- Sort Area -->
+    <div class="sort-area">
+      <div class="sort-group">
+        <button
+          class="sort-btn"
+          :class="{ active: sortBy === 'time' }"
+          @click="sortBy = 'time'"
+        >
+          按时间
+        </button>
+        <button
+          class="sort-btn"
+          :class="{ active: sortBy === 'priority' }"
+          @click="sortBy = 'priority'"
+        >
+          按优先级
+        </button>
+      </div>
+    </div>
+
     <!-- Memo List -->
     <div class="memo-list">
       <!-- Pinned Memos -->
-      <template v-if="memoStore.pinnedMemos.length > 0">
+      <template v-if="sortedPinnedMemos.length > 0">
         <div class="section-label">置顶</div>
-        <div class="memo-card pinned" v-for="memo in memoStore.pinnedMemos" :key="memo.id">
+        <div class="memo-card pinned" v-for="memo in sortedPinnedMemos" :key="memo.id">
           <input
             v-if="editingMemoId === memo.id"
             v-model="editingContent"
@@ -84,9 +104,9 @@
       </template>
 
       <!-- Normal Memos -->
-      <template v-if="memoStore.normalMemos.length > 0">
+      <template v-if="sortedNormalMemos.length > 0">
         <div class="section-label">最近</div>
-        <div class="memo-card" v-for="memo in memoStore.normalMemos" :key="memo.id">
+        <div class="memo-card" v-for="memo in sortedNormalMemos" :key="memo.id">
           <input
             v-if="editingMemoId === memo.id"
             v-model="editingContent"
@@ -145,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { useMemoStore } from '@/stores/memoStore'
 import type { Memo } from '@/types/models'
 
@@ -155,6 +175,7 @@ const newMemoPriority = ref<'low' | 'medium' | 'high' | 'urgent'>('medium')
 const textareaRef = ref<HTMLTextAreaElement>()
 const editingMemoId = ref<string | null>(null)
 const editingContent = ref('')
+const sortBy = ref<'time' | 'priority'>('time')
 
 const priorities = [
   { value: 'low' as const, label: '低', color: '#6B6B6B' },
@@ -162,6 +183,41 @@ const priorities = [
   { value: 'high' as const, label: '高', color: '#f59e0b' },
   { value: 'urgent' as const, label: '紧急', color: '#ef4444' }
 ]
+
+// 优先级权重映射
+const priorityWeight = {
+  urgent: 4,
+  high: 3,
+  medium: 2,
+  low: 1
+}
+
+// 排序函数
+function sortMemos(memos: Memo[]) {
+  if (sortBy.value === 'time') {
+    // 按时间排序（最新的在前）
+    return [...memos].sort((a, b) => b.createdAt - a.createdAt)
+  } else {
+    // 按优先级排序（优先级高的在前，相同优先级按时间排序）
+    return [...memos].sort((a, b) => {
+      const priorityA = priorityWeight[a.priority || 'medium']
+      const priorityB = priorityWeight[b.priority || 'medium']
+
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA
+      }
+
+      // 优先级相同，按时间排序
+      return b.createdAt - a.createdAt
+    })
+  }
+}
+
+// 排序后的置顶备忘录
+const sortedPinnedMemos = computed(() => sortMemos(memoStore.pinnedMemos))
+
+// 排序后的普通备忘录
+const sortedNormalMemos = computed(() => sortMemos(memoStore.normalMemos))
 
 async function handleCreate() {
   const content = newMemoContent.value.trim()
@@ -257,7 +313,47 @@ function formatTime(timestamp: number) {
 
 .input-area {
   padding: 0 16px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
+}
+
+.sort-area {
+  padding: 0 16px 12px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.sort-group {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border-radius: 10px;
+  padding: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  width: 328px;
+}
+
+.sort-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: transparent;
+  color: #6B6B6B;
+}
+
+.sort-btn.active {
+  background: #D4916E;
+  color: white;
+}
+
+.sort-btn:hover {
+  opacity: 0.8;
 }
 
 .input-card {

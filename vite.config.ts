@@ -9,6 +9,9 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
+  server: {
+    open: '/src/sidepanel/'
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
