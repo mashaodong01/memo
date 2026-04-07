@@ -28,9 +28,6 @@
 
     <!-- Toast Notification -->
     <div class="toast" :class="{ show: showToast }">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
       {{ toastMessage }}
     </div>
 
@@ -307,7 +304,7 @@ function showToastMessage(message: string) {
   showToast.value = true
   setTimeout(() => {
     showToast.value = false
-  }, 2000)
+  }, 3000)
 }
 
 function cyclePriority(memo: Memo) {
@@ -327,7 +324,7 @@ function cyclePriority(memo: Memo) {
 function confirmComplete() {
   if (pendingMemoId.value) {
     memoStore.updateMemo(pendingMemoId.value, { status: 'completed' })
-    showToastMessage('✨ 备忘录已完成！')
+    showToastMessage('✨ 又前进一步')
 
     // 重置状态
     showConfirmDialog.value = false
@@ -484,21 +481,19 @@ function formatTime(timestamp: number) {
 
 .toast {
   position: fixed;
-  top: 16px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%) translateY(-100px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  background: #ffffff;
+  color: #606266;
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   font-size: 14px;
-  font-weight: 500;
+  text-align: center;
   opacity: 0;
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
   z-index: 1000;
 }
@@ -506,10 +501,6 @@ function formatTime(timestamp: number) {
 .toast.show {
   transform: translateX(-50%) translateY(0);
   opacity: 1;
-}
-
-.toast svg {
-  flex-shrink: 0;
 }
 
 @keyframes slideUp {
