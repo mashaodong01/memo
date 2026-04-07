@@ -1,5 +1,39 @@
 <template>
   <div class="memo-section">
+    <!-- Confirmation Dialog -->
+    <div class="dialog-overlay" v-if="showConfirmDialog" @click="showConfirmDialog = false">
+      <div class="dialog-content" @click.stop>
+        <div class="dialog-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <h3>确认完成</h3>
+        </div>
+        <div class="dialog-body">
+          <p>确定要将这条备忘录标记为已完成吗？</p>
+          <div class="memo-preview">{{ pendingMemoContent }}</div>
+        </div>
+        <div class="dialog-footer">
+          <button class="dialog-btn dialog-btn-cancel" @click="showConfirmDialog = false">
+            取消
+          </button>
+          <button class="dialog-btn dialog-btn-confirm" @click="confirmComplete">
+            确认完成
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" :class="{ show: showToast }">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      {{ toastMessage }}
+    </div>
+
     <!-- Input Area -->
     <div class="input-area">
       <div class="input-card">
@@ -176,6 +210,11 @@ const textareaRef = ref<HTMLTextAreaElement>()
 const editingMemoId = ref<string | null>(null)
 const editingContent = ref('')
 const sortBy = ref<'time' | 'priority'>('time')
+const showToast = ref(false)
+const toastMessage = ref('')
+const showConfirmDialog = ref(false)
+const pendingMemoId = ref<string | null>(null)
+const pendingMemoContent = ref('')
 
 const priorities = [
   { value: 'low' as const, label: '低', color: '#6B6B6B' },
@@ -263,11 +302,38 @@ function cancelEdit() {
   editingContent.value = ''
 }
 
+function showToastMessage(message: string) {
+  toastMessage.value = message
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 2000)
+}
+
 function cyclePriority(memo: Memo) {
   const currentStatus = memo.status || 'todo'
-  const nextStatus = currentStatus === 'todo' ? 'completed' : 'todo'
 
-  memoStore.updateMemo(memo.id, { status: nextStatus })
+  // 如果要标记为完成，先显示确认对话框
+  if (currentStatus === 'todo') {
+    pendingMemoId.value = memo.id
+    pendingMemoContent.value = memo.content
+    showConfirmDialog.value = true
+  } else {
+    // 如果是从完成改回待办，直接执行
+    memoStore.updateMemo(memo.id, { status: 'todo' })
+  }
+}
+
+function confirmComplete() {
+  if (pendingMemoId.value) {
+    memoStore.updateMemo(pendingMemoId.value, { status: 'completed' })
+    showToastMessage('✨ 备忘录已完成！')
+
+    // 重置状态
+    showConfirmDialog.value = false
+    pendingMemoId.value = null
+    pendingMemoContent.value = ''
+  }
 }
 
 function getStatusText(status?: 'todo' | 'completed') {
@@ -309,6 +375,152 @@ function formatTime(timestamp: number) {
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
+}
+
+/* Dialog Styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dialog-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  width: 90%;
+  max-width: 360px;
+  animation: slideUp 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #E8DFD3;
+}
+
+.dialog-header svg {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.dialog-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground-primary);
+  margin: 0;
+}
+
+.dialog-body {
+  padding: 20px;
+}
+
+.dialog-body p {
+  font-size: 14px;
+  color: var(--foreground-secondary);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.memo-preview {
+  background: var(--surface-primary);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--foreground-primary);
+  line-height: 1.5;
+  max-height: 80px;
+  overflow-y: auto;
+  word-wrap: break-word;
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px 20px;
+}
+
+.dialog-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.dialog-btn-cancel {
+  background: var(--surface-primary);
+  color: var(--foreground-secondary);
+}
+
+.dialog-btn-cancel:hover {
+  background: #E8DFD3;
+}
+
+.dialog-btn-confirm {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.dialog-btn-confirm:hover {
+  background: #c58562;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(212, 145, 110, 0.3);
+}
+
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast svg {
+  flex-shrink: 0;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .input-area {
