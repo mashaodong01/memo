@@ -8,3 +8,11 @@ export interface Memo {
   color?: string
   status?: 'todo' | 'completed'
 }
+
+export interface DailyLog {
+  id: string
+  content: string
+  date: string
+  createdAt: number
+  updatedAt: number
+}

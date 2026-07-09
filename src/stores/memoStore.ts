@@ -21,6 +21,30 @@ export const useMemoStore = defineStore('memo', () => {
       .sort((a, b) => b.createdAt - a.createdAt)
   )
 
+  // 计算属性：已完成的备忘录
+  const completedMemos = computed(() =>
+    memos.value
+      .filter(m => m.status === 'completed')
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+  )
+
+  function isToday(timestamp: number) {
+    const date = new Date(timestamp)
+    const today = new Date()
+    return (
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate()
+    )
+  }
+
+  // 计算属性：今日完成的备忘录
+  const todayCompletedMemos = computed(() =>
+    memos.value
+      .filter(m => m.status === 'completed' && isToday(m.updatedAt))
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+  )
+
   // 统计数据
   const stats = computed(() => {
     const total = memos.value.length
@@ -145,6 +169,8 @@ export const useMemoStore = defineStore('memo', () => {
     loading,
     pinnedMemos,
     normalMemos,
+    completedMemos,
+    todayCompletedMemos,
     stats,
     memosByPriority,
     loadMemos,

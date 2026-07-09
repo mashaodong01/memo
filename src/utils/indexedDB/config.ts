@@ -9,7 +9,7 @@ import type { DBConfig } from './types'
  */
 export const dbConfig: DBConfig = {
   name: 'MemoExtensionDB',
-  version: 3,
+  version: 4,
   stores: [
     // 备忘录表
     {
@@ -35,6 +35,24 @@ export const dbConfig: DBConfig = {
         {
           name: 'status',
           keyPath: 'status',
+          options: { unique: false }
+        }
+      ]
+    },
+    // 每日记录表
+    {
+      name: 'dailyLogs',
+      keyPath: 'id',
+      autoIncrement: false,
+      indexes: [
+        {
+          name: 'date',
+          keyPath: 'date',
+          options: { unique: false }
+        },
+        {
+          name: 'createdAt',
+          keyPath: 'createdAt',
           options: { unique: false }
         }
       ]

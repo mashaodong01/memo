@@ -24,6 +24,8 @@
     <!-- Content -->
     <main class="content">
       <MemoSection v-if="currentTab === 'memo'" />
+      <TodaySection v-if="currentTab === 'today'" />
+      <HistorySection v-if="currentTab === 'history'" />
       <StatsSection v-if="currentTab === 'stats'" />
     </main>
   </div>
@@ -32,18 +34,24 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import MemoSection from '@/components/MemoSection/MemoList.vue'
+import TodaySection from '@/components/TodaySection/TodayList.vue'
+import HistorySection from '@/components/HistorySection/HistoryList.vue'
 import StatsSection from '@/components/StatsSection/StatsOverview.vue'
 import { useMemoStore } from '@/stores/memoStore'
+import { useDailyLogStore } from '@/stores/dailyLogStore'
 import { db } from '@/utils/indexedDB'
 
 const currentTab = ref('memo')
 
 const tabs = [
   { id: 'memo', label: '备忘录' },
+  { id: 'today', label: '今日' },
+  { id: 'history', label: '历史' },
   { id: 'stats', label: '统计' }
 ]
 
 const memoStore = useMemoStore()
+const dailyLogStore = useDailyLogStore()
 
 onMounted(async () => {
   try {
@@ -55,16 +63,19 @@ onMounted(async () => {
     // 加载数据
     console.log('[App] Loading memos...')
     await memoStore.loadMemos()
+    await dailyLogStore.loadLogs()
     console.log('[App] Data loaded successfully')
 
     // 暴露调试工具到全局
     ;(window as any).__DEBUG__ = {
       db,
       memoStore,
+      dailyLogStore,
       async checkDB() {
         const memoCount = await db.table('memos').count()
-        console.log('Database status:', { memoCount })
-        return { memoCount }
+        const dailyLogCount = await db.table('dailyLogs').count()
+        console.log('Database status:', { memoCount, dailyLogCount })
+        return { memoCount, dailyLogCount }
       },
       async addTestMemo() {
         const content = '测试备忘录 ' + new Date().toLocaleString()
@@ -74,6 +85,7 @@ onMounted(async () => {
         await db.clearAll()
         console.log('Database cleared')
         await memoStore.loadMemos()
+        await dailyLogStore.loadLogs()
       }
     }
     console.log('[App] Debug tools available: window.__DEBUG__')
@@ -106,9 +118,9 @@ onMounted(async () => {
 }
 
 .tab {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--foreground-muted);
   transition: all 0.2s;
